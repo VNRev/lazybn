@@ -1,6 +1,12 @@
 from struct import unpack
 
+# capstone/keystone stuff
+# binaryninja
+# Qt stuff
+# capstone/keystone stuff
+# binaryninja
 import pyperclip
+# Qt stuff
 from binaryninja import *
 
 
@@ -198,6 +204,62 @@ def convert2Pfloat(bv: BinaryView, start: int, size: int):
     pyperclip.copy(output)
 
 
+def getNop(arch):
+    if arch in ['x16', 'x32', 'x64', 'x16att', 'x32att', 'x64att', 'x16nasm', 'x32nasm', 'x64nasm']:
+        return b'\x90'
+    elif arch in ['arm', 'armv8']:
+        return b'\x00\xf0\x20\xe3'
+    elif arch in ['armbe', 'armv8be']:
+        return b'\xe3\x20\xf0\x00'
+    elif arch in ['thumb', 'thumbv8']:
+        return b'\x00\xbf'
+    elif arch in ['thumbbe', 'thumbv8be']:
+        return b'\xbf\x00'
+    elif arch in ['arm64']:
+        return b'\x1f\x20\x03\xd5'
+    elif arch in ['hexagon']:
+        return b'\x00\xc0\x00\x7f'
+    elif arch in ['mips', 'mipsbe', 'mips64', 'mips64be']:
+        return b'\x00\x00\x00\x00'
+    elif arch in ['ppc64']:
+        return b'\x00\x00\x00\x60'
+    elif arch in ['ppc32be', 'ppc64be']:
+        return b'\x60\x00\x00\x00'
+    elif arch in ['sparc']:
+        return b'\x00\x00\x00\x01'
+    elif arch in ['sparcbe', 'sparc64be']:
+        return b'\x01\x00\x00\x00'
+
+    raise Exception('no NOP for architecture: %s' % arch)
+
+
+binja_to_ks = {
+    'aarch64': 'arm64',
+    'armv7': 'arm',
+    'armv7eb': 'armbe',
+    'thumb2': 'thumb',
+    'thumb2eb': 'thumbbe',
+    'mipsel32': 'mips',
+    'mips32': 'mipsbe',
+    'ppc': 'ppc32be',
+    'ppc_le': 'ERROR',
+    'ppc64': 'ppc64be',
+    'ppc64_le': 'ppc64',
+    'sh4': 'ERROR',
+    'x86_16': 'x16nasm',
+    'x86': 'x32nasm',
+    'x86_64': 'x64nasm'
+}
+
+
+def nopSelection(bv: BinaryView, start: int, size: int):
+    nopByte = getNop(binja_to_ks[bv.arch.name])
+    bv.write(start, nopByte * (size // len(nopByte)))
+    print(
+        f"[+]nop {(size // len(nopByte)) * len(nopByte)} bytes at 0x{start:x}\n{hex(start)}~{hex((size // len(nopByte)) * len(nopByte))}")
+
+
+
 def uiPreProcess(bv: BinaryView):
     start = get_address_input("start_address", "start_address")
     end = get_address_input("end_address:if yourInput==startAddr,next you will input length", "end_address")
@@ -276,6 +338,7 @@ PluginCommand.register_for_range("Convert\\uint32_t(python)", "", convert2Puint3
 PluginCommand.register_for_range("Convert\\uint64_t(python)", "", convert2Puint64_t)
 PluginCommand.register_for_range("Convert\\double(python)", "", convert2Pdouble)
 PluginCommand.register_for_range("Convert\\float(python)", "", convert2Pfloat)
+PluginCommand.register_for_range("Convert\\nop", "", nopSelection)
 
 PluginCommand.register("UIConvert\\float(python)", "", uiConvert2Pfloat)
 PluginCommand.register("UIConvert\\double(python)", "", uiConvert2Pdouble)
