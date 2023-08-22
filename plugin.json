@@ -11,7 +11,7 @@
   "api": [
     "python3"
   ],
-  "description": "il2cpp info 2 bn",
+  "description": "make  bn lazy again!",
   "longdescription": "",
   "license": {
     "name": "MIT",
@@ -25,7 +25,6 @@
   "dependencies": {
     "pip": [
       "pyperclip"
-
     ]
   },
   "version": "1.0.0",
